@@ -1,0 +1,15 @@
+//引入aar文件
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+ext.supportLibVersion = '27.+'
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation "com.android.support:appcompat-v7:${supportLibVersion}"
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+    implementation(name: "thsHxIM", ext: 'aar')
+}
+
