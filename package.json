@@ -1,0 +1,25 @@
+{
+  "name": "cn.com.ths.hx.im",
+  "version": "1.0.0",
+  "description": "",
+  "cordova": {
+    "id": "cn.com.ths.hx.im",
+    "platforms": [
+      "android"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/THS-FE/thsHxIM.git"
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android"
+  ],
+  "author": "liuyx",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/THS-FE/thsHxIM/issues"
+  },
+  "homepage": "https://github.com/THS-FE/thsHxIM#readme"
+}
