@@ -10,6 +10,7 @@
         <config-file parent="/*" target="res/xml/config.xml">
             <feature name="thsHxIM">
                 <param name="android-package" value="cn.com.ths.hx.im.thsHxIM" />
+                <param name="onload" value="true" />
             </feature>
         </config-file>
         <config-file parent="/*" target="AndroidManifest.xml"></config-file>
