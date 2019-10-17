@@ -16,16 +16,23 @@ import com.hyphenate.chat.EMMessage;
 import com.hyphenate.chatuidemo.Constant;
 import com.hyphenate.chatuidemo.DemoApplication;
 import com.hyphenate.chatuidemo.DemoHelper;
+import com.hyphenate.chatuidemo.conference.ConferenceActivity;
 import com.hyphenate.chatuidemo.db.DemoDBManager;
+import com.hyphenate.chatuidemo.ui.AddContactActivity;
 import com.hyphenate.chatuidemo.ui.ChatActivity;
+import com.hyphenate.chatuidemo.ui.GroupsActivity;
+import com.hyphenate.chatuidemo.ui.NewFriendsMsgActivity;
+import com.hyphenate.chatuidemo.ui.PublicChatRoomsActivity;
 import com.hyphenate.easeui.model.EaseAtMessageHelper;
 import com.hyphenate.easeui.utils.EaseCommonUtils;
 import com.hyphenate.easeui.utils.EaseUserUtils;
 import com.hyphenate.util.DateUtils;
 
+import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
 
+import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,6 +49,31 @@ import java.util.Map;
  */
 public class thsHxIM extends CordovaPlugin {
     public static final  String TAG = "thsHxIM-CordovaPlugin";
+
+    @Override
+    public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+        super.initialize(cordova, webView);
+        Log.e(TAG,"initialize");
+    }
+
+    @Override
+    public void onPause(boolean multitasking) {
+        super.onPause(multitasking);
+        Log.e(TAG,"onPause");
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        Log.e(TAG,"onDestroy");
+    }
+
+    @Override
+    public void onResume(boolean multitasking) {
+        super.onResume(multitasking);
+        Log.e(TAG,"onResume");
+    }
+
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         // 登录即时通讯服务器
@@ -70,6 +102,27 @@ public class thsHxIM extends CordovaPlugin {
                 String  cvs = getConversationToJSON(msgList);
                 callbackContext.success(cvs);
             }
+            return true;
+            //进入添加联系人页面
+        }else if(action.equals("startAddContact")){
+            cordova.getActivity().startActivity(new Intent(cordova.getActivity(), AddContactActivity.class));
+            return true;
+           //进入申请与通知页面
+        }else if(action.equals("startNewFriendsMsg")){
+            cordova.getActivity().startActivity(new Intent(cordova.getActivity(), NewFriendsMsgActivity.class));
+            return true;
+            //进入群聊列表页面
+        }else if(action.equals("startGroups")){
+            cordova.getActivity().startActivity(new Intent(cordova.getActivity(), GroupsActivity.class));
+            return true;
+            //进入聊天室页面
+        }else if(action.equals("startPublicChatRooms")){
+            cordova.getActivity().startActivity(new Intent(cordova.getActivity(), PublicChatRoomsActivity.class));
+            return true;
+            //进入音视频会议页面
+        }else if(action.equals("startConferenceCall")){
+            ConferenceActivity.startConferenceCall(cordova.getActivity(),null);
+            return true;
         }
         return false;
     }
