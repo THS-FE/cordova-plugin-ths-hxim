@@ -1,6 +1,10 @@
 package cn.com.ths.hx.im;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -8,6 +12,11 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.hyphenate.EMCallBack;
+import com.hyphenate.EMClientListener;
+import com.hyphenate.EMContactListener;
+import com.hyphenate.EMError;
+import com.hyphenate.EMMessageListener;
+import com.hyphenate.EMMultiDeviceListener;
 import com.hyphenate.chat.EMChatRoom;
 import com.hyphenate.chat.EMClient;
 import com.hyphenate.chat.EMConversation;
@@ -16,11 +25,13 @@ import com.hyphenate.chat.EMMessage;
 import com.hyphenate.chatuidemo.Constant;
 import com.hyphenate.chatuidemo.DemoApplication;
 import com.hyphenate.chatuidemo.DemoHelper;
+import com.hyphenate.chatuidemo.HMSPushHelper;
 import com.hyphenate.chatuidemo.conference.ConferenceActivity;
 import com.hyphenate.chatuidemo.db.DemoDBManager;
 import com.hyphenate.chatuidemo.ui.AddContactActivity;
 import com.hyphenate.chatuidemo.ui.ChatActivity;
 import com.hyphenate.chatuidemo.ui.GroupsActivity;
+import com.hyphenate.chatuidemo.ui.LoginActivity;
 import com.hyphenate.chatuidemo.ui.NewFriendsMsgActivity;
 import com.hyphenate.chatuidemo.ui.PublicChatRoomsActivity;
 import com.hyphenate.easeui.model.EaseAtMessageHelper;
@@ -49,29 +60,73 @@ import java.util.Map;
  */
 public class thsHxIM extends CordovaPlugin {
     public static final  String TAG = "thsHxIM-CordovaPlugin";
-
+    private BroadcastReceiver broadcastReceiver;
+    private LocalBroadcastManager broadcastManager;
+    private BroadcastReceiver internalDebugReceiver;
+    private BroadcastReceiver  onDisconnectedReceiver;
+    private static thsHxIM instance;
+    public thsHxIM() {
+        instance = this;
+    }
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
         Log.e(TAG,"initialize");
+        DemoHelper.getInstance().initHandler(cordova.getActivity().getMainLooper());
+        //注册各种事件监听
+        registerBroadcastReceiver();
+
+        EMClient.getInstance().contactManager().setContactListener(new thsHxIM.MyContactListener());
+        EMClient.getInstance().addClientListener(clientListener);
+        EMClient.getInstance().addMultiDeviceListener(new thsHxIM.MyMultiDeviceListener());
+        //debug purpose only
+        registerInternalDebugReceiver();
+
+        // 获取华为 HMS 推送 token
+        HMSPushHelper.getInstance().getHMSToken(cordova.getActivity());
     }
 
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.e(TAG,"onStart");
+        if (DemoHelper.getInstance().isLoggedIn()) {
+            EMClient.getInstance().chatManager().loadAllConversations();
+            EMClient.getInstance().groupManager().loadAllGroups();
+        }
+    }
     @Override
     public void onPause(boolean multitasking) {
         super.onPause(multitasking);
         Log.e(TAG,"onPause");
+        EMClient.getInstance().chatManager().removeMessageListener(messageListener);
+        EMClient.getInstance().removeClientListener(clientListener);
+        DemoHelper sdkHelper = DemoHelper.getInstance();
+        sdkHelper.popActivity(cordova.getActivity());
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.e(TAG,"onDestroy");
+        unregisterBroadcastReceiver();
+
+        try {
+            cordova.getActivity().unregisterReceiver(internalDebugReceiver);
+        } catch (Exception e) {
+        }
+        instance = null;
     }
 
     @Override
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
         Log.e(TAG,"onResume");
+        DemoHelper sdkHelper = DemoHelper.getInstance();
+        sdkHelper.pushActivity(cordova.getActivity());
+
+        EMClient.getInstance().chatManager().addMessageListener(messageListener);
     }
 
     @Override
@@ -106,22 +161,42 @@ public class thsHxIM extends CordovaPlugin {
             //进入添加联系人页面
         }else if(action.equals("startAddContact")){
             cordova.getActivity().startActivity(new Intent(cordova.getActivity(), AddContactActivity.class));
+            callbackContext.success("success");
             return true;
            //进入申请与通知页面
         }else if(action.equals("startNewFriendsMsg")){
             cordova.getActivity().startActivity(new Intent(cordova.getActivity(), NewFriendsMsgActivity.class));
+            callbackContext.success("success");
             return true;
             //进入群聊列表页面
         }else if(action.equals("startGroups")){
             cordova.getActivity().startActivity(new Intent(cordova.getActivity(), GroupsActivity.class));
+            callbackContext.success("success");
             return true;
             //进入聊天室页面
         }else if(action.equals("startPublicChatRooms")){
             cordova.getActivity().startActivity(new Intent(cordova.getActivity(), PublicChatRoomsActivity.class));
+            callbackContext.success("success");
             return true;
             //进入音视频会议页面
         }else if(action.equals("startConferenceCall")){
             ConferenceActivity.startConferenceCall(cordova.getActivity(),null);
+            callbackContext.success("success");
+            return true;
+            //获取消息总数
+        }else if(action.equals("getUnreadMsgCountTotal")){
+            int count = getUnreadMsgCountTotal();
+            callbackContext.success(count);
+            return true;
+            // 获取是否是登录状态
+        }else if(action.equals("isLoggedIn")){
+           boolean isLoggedIn = DemoHelper.getInstance().isLoggedIn();
+            callbackContext.success(isLoggedIn+"");
+            return true;
+            // 获取当前user
+        }else if(action.equals("getCurrentUser")){
+            String  currentUser = EMClient.getInstance().getCurrentUser();
+            callbackContext.success(currentUser);
             return true;
         }
         return false;
@@ -360,6 +435,318 @@ public class thsHxIM extends CordovaPlugin {
                 }
             }
 
+        });
+    }
+
+    /**
+     * debug purpose only, you can ignore this
+     */
+    private void registerInternalDebugReceiver() {
+        internalDebugReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                DemoHelper.getInstance().logout(false,new EMCallBack() {
+
+                    @Override
+                    public void onSuccess() {
+//                        runOnUiThread(new Runnable() {
+//                            public void run() {
+//                                finish();
+//                                startActivity(new Intent(MsgActivity.this, LoginActivity.class));
+//                            }
+//                        });
+                    }
+
+                    @Override
+                    public void onProgress(int progress, String status) {}
+
+                    @Override
+                    public void onError(int code, String message) {}
+                });
+            }
+        };
+        IntentFilter filter = new IntentFilter(cordova.getActivity().getPackageName() + ".em_internal_debug");
+        cordova.getActivity().registerReceiver(internalDebugReceiver, filter);
+    }
+    EMClientListener clientListener = new EMClientListener() {
+        @Override
+        public void onMigrate2x(boolean success) {
+            Toast.makeText(cordova.getActivity(), "onUpgradeFrom 2.x to 3.x " + (success ? "success" : "fail"), Toast.LENGTH_LONG).show();
+            if (success) {
+                refreshUIWithMessage();
+            }
+        }
+    };
+
+    private void refreshUIWithMessage() {
+//        cordova.getActivity().runOnUiThread(new Runnable() {
+//            public void run() {
+                // refresh unread count
+                String format = "cordova.plugins.thsHxIM.refreshUIWithMessageInAndroidCallback(%s);";
+                final String js = String.format(format, "refreshUI");
+                cordova.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        instance.webView.loadUrl("javascript:" + js);
+                    }
+                });
+
+//                updateUnreadLabel();
+//                List<EMConversation> msgList = loadConversationList();
+                //            Log.i("msgList",getConversationToJSON(msgList));
+//                if (currentTabIndex == 0) {
+//                    // refresh conversation list
+//                    if (conversationListFragment != null) {
+//                        conversationListFragment.refresh();
+//                    }
+//                }
+//            }
+//        });
+    }
+    /**
+     * update unread message count
+     */
+    public void updateUnreadLabel() {
+        int count = getUnreadMsgCountTotal();
+//        if (count > 0) {
+//            unreadLabel.setText(String.valueOf(count));
+//            unreadLabel.setVisibility(View.VISIBLE);
+//        } else {
+//            unreadLabel.setVisibility(View.INVISIBLE);
+//        }
+    }
+    /**
+     * get unread message count
+     *
+     * @return
+     */
+    public int getUnreadMsgCountTotal() {
+        return EMClient.getInstance().chatManager().getUnreadMessageCount();
+    }
+    private void registerBroadcastReceiver() {
+        broadcastManager = LocalBroadcastManager.getInstance(cordova.getActivity());
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(Constant.ACTION_CONTACT_CHANAGED);
+        intentFilter.addAction(Constant.ACTION_GROUP_CHANAGED);
+        broadcastReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+//                updateUnreadLabel();
+//                updateUnreadAddressLable();
+//                if (currentTabIndex == 0) {
+//                    // refresh conversation list
+//                    if (conversationListFragment != null) {
+//                        conversationListFragment.refresh();
+//                    }
+//                } else if (currentTabIndex == 1) {
+//                    if(contactListFragment != null) {
+//                        contactListFragment.refresh();
+//                    }
+//                }
+                String action = intent.getAction();
+                if(action.equals(Constant.ACTION_GROUP_CHANAGED)){
+//                    if (EaseCommonUtils.getTopActivity(MsgActivity.this).equals(GroupsActivity.class.getName())) {
+//                        GroupsActivity.instance.onResume();
+//                    }
+                }
+            }
+        };
+        broadcastManager.registerReceiver(broadcastReceiver, intentFilter);
+
+        onDisconnectedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int error = intent.getIntExtra("EMError",0);
+                Log.e("EMError",error+"");
+                String errorStr = "";
+                if (error == EMError.USER_REMOVED) {
+                    errorStr = "USER_REMOVED";
+                    //onUserException(Constant.ACCOUNT_REMOVED);
+                } else if (error == EMError.USER_LOGIN_ANOTHER_DEVICE) {
+                    //onUserException(Constant.ACCOUNT_CONFLICT);
+                    errorStr = "USER_LOGIN_ANOTHER_DEVICE";
+                } else if (error == EMError.SERVER_SERVICE_RESTRICTED) {
+                    //onUserException(Constant.ACCOUNT_FORBIDDEN);
+                    errorStr = "SERVER_SERVICE_RESTRICTED";
+                } else if (error == EMError.USER_KICKED_BY_CHANGE_PASSWORD) {
+                    //onUserException(Constant.ACCOUNT_KICKED_BY_CHANGE_PASSWORD);
+                    errorStr = "USER_KICKED_BY_CHANGE_PASSWORD";
+                } else if (error == EMError.USER_KICKED_BY_OTHER_DEVICE) {
+                    errorStr = "USER_KICKED_BY_OTHER_DEVICE";
+                    // onUserException(Constant.ACCOUNT_KICKED_BY_OTHER_DEVICE);
+                }
+                String format = "cordova.plugins.thsHxIM.onDisconnectedReceiverInAndroidCallback(%s);";
+                final String js = String.format(format, errorStr);
+                cordova.getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        instance.webView.loadUrl("javascript:" + js);
+                    }
+                });
+            }
+        };
+        IntentFilter disconnectedReceiverintentFilter = new IntentFilter();
+        disconnectedReceiverintentFilter.addAction(Constant.ACTION_DISCONNECTED);
+        broadcastManager.registerReceiver(onDisconnectedReceiver,disconnectedReceiverintentFilter);
+    }
+
+    public class MyContactListener implements EMContactListener {
+        @Override
+        public void onContactAdded(String username) {
+            Log.e("MyContactListener","onContactAdded,username:"+username);
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("action","onContactAdded");
+                obj.put("username",username);
+                sendMsg(obj.toString(),"contactUpdate");
+            }catch (JSONException e){
+
+            }
+        }
+        @Override
+        public void onContactDeleted(final String username) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+                    Log.e("MyContactListener","onContactDeleted"+username);
+                    try {
+                        JSONObject obj = new JSONObject();
+                        obj.put("action","onContactDeleted");
+                        obj.put("username",username);
+                        sendMsg(obj.toString(),"contactUpdate");
+                    }catch (JSONException e){
+
+                    }
+//                    if (ChatActivity.activityInstance != null && ChatActivity.activityInstance.toChatUsername != null &&
+//                            username.equals(ChatActivity.activityInstance.toChatUsername)) {
+//                        String st10 = getResources().getString(com.hyphenate.chatuidemo.R.string.have_you_removed);
+//                        Toast.makeText(MainActivity.this, ChatActivity.activityInstance.getToChatUsername() + st10, Toast.LENGTH_LONG)
+//                                .show();
+//                        ChatActivity.activityInstance.finish();
+//                    }
+                }
+            });
+            //updateUnreadAddressLable();
+        }
+        @Override
+        public void onContactInvited(String username, String reason) {
+            Log.e("MyContactListener","onContactInvited username:"+username+",reason:"+reason);
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("action","onContactInvited");
+                obj.put("username",username);
+                obj.put("reason",reason);
+                sendMsg(obj.toString(),"contactUpdate");
+            }catch (JSONException e){
+
+            }
+        }
+        @Override
+        public void onFriendRequestAccepted(String username) {
+            Log.e("MyContactListener","onFriendRequestAccepted username:"+username);
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("action","onFriendRequestAccepted");
+                obj.put("username",username);
+                sendMsg(obj.toString(),"contactUpdate");
+            }catch (JSONException e){
+
+            }
+        }
+        @Override
+        public void onFriendRequestDeclined(String username) {
+            Log.e("MyContactListener","onFriendRequestDeclined username:"+username);
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("action","onFriendRequestDeclined");
+                obj.put("username",username);
+                sendMsg(obj.toString(),"contactUpdate");
+            }catch (JSONException e){
+
+            }
+        }
+    }
+
+    public class MyMultiDeviceListener implements EMMultiDeviceListener {
+
+        @Override
+        public void onContactEvent(int event, String target, String ext) {
+            Log.e("MyMultiDeviceListener","onContactEvent target:"+target+",ext:"+ext);
+        }
+
+        @Override
+        public void onGroupEvent(int event, String target, final List<String> username) {
+            switch (event) {
+                case EMMultiDeviceListener.GROUP_LEAVE:
+                    Log.e("MyMultiDeviceListener","onGroupEvent");
+                    // ChatActivity.activityInstance.finish();
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void unregisterBroadcastReceiver(){
+        broadcastManager.unregisterReceiver(broadcastReceiver);
+        broadcastManager.unregisterReceiver(onDisconnectedReceiver);
+    }
+
+    EMMessageListener messageListener = new EMMessageListener() {
+
+        @Override
+        public void onMessageReceived(List<EMMessage> messages) {
+            // notify new message
+            for (EMMessage message: messages) {
+                DemoHelper.getInstance().getNotifier().vibrateAndPlayTone(message);
+            }
+            Log.e("messageListener","onMessageReceived");
+            refreshUIWithMessage();
+        }
+
+        @Override
+        public void onCmdMessageReceived(List<EMMessage> messages) {
+
+            refreshUIWithMessage();
+            Log.e("messageListener","onCmdMessageReceived");
+        }
+
+        @Override
+        public void onMessageRead(List<EMMessage> messages) {
+            Log.e("messageListener","onMessageRead");
+        }
+
+        @Override
+        public void onMessageDelivered(List<EMMessage> message) {
+            Log.e("messageListener","onMessageDelivered");
+        }
+
+        @Override
+        public void onMessageRecalled(List<EMMessage> messages) {
+            Log.e("messageListener","onMessageRecalled");
+            refreshUIWithMessage();
+        }
+
+        @Override
+        public void onMessageChanged(EMMessage message, Object change) {
+            Log.e("messageListener","onMessageChanged");
+        }
+    };
+
+    /**
+     * 发送消息到
+     * @param data
+     * @param methodStr
+     */
+    private  void sendMsg(String data,String methodStr){
+        String format = "cordova.plugins.thsHxIM."+methodStr+"InAndroidCallback(%s);";
+        final String js = String.format(format, data);
+        cordova.getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                instance.webView.loadUrl("javascript:" + js);
+            }
         });
     }
 }

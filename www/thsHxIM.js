@@ -63,4 +63,54 @@ exports.startPublicChatRooms = function (success, error) {
 exports.startConferenceCall = function (success, error) {
     exec(success, error, 'thsHxIM', 'startConferenceCall', []);
 };
+/**
+ * 获取未读消息总数
+ */
+exports.getUnreadMsgCountTotal  = function (success, error) {
+    exec(success, error, 'thsHxIM', 'getUnreadMsgCountTotal', []);
+};
+/**
+ * 获取登录状态
+ */
+exports.isLoggedIn  = function (success, error) {
+    exec(success, error, 'thsHxIM', 'isLoggedIn', []);
+};
+/**
+ * 获取登录状态
+ */
+exports.isLoggedIn  = function (success, error) {
+    exec(success, error, 'thsHxIM', 'isLoggedIn', []);
+};
+
+exports.getCurrentUser = function(success, error){
+exec(success, error, 'thsHxIM', 'getCurrentUser', []);
+}
+
+
+
+//收到消息刷新UI界面
+exports.refreshUIWithMessageInAndroidCallback = function(data) {
+    data = JSON.stringify(data)
+   console.log('refreshUIWithMessageInAndroidCallback' + data);
+   cordova.fireDocumentEvent('hxim.refreshUIWithMessage', data);
+}
+// 网路状态监听回调
+exports.onDisconnectedReceiverInAndroidCallback = function(data) {
+     data = JSON.stringify(data)
+   console.log('onDisconnectedReceiverInAndroidCallback' + data);
+   cordova.fireDocumentEvent('hxim.onDisconnectedReceiver', data);
+}
+// 联系人更新
+exports.contactUpdateInAndroidCallback = function(data) {
+   data = JSON.stringify(data)
+   console.log('contactUpdateInAndroidCallback' + data);
+   cordova.fireDocumentEvent('hxim.contactUpdate', data);
+}
+
+
+
+
+
+
+
 
