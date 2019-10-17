@@ -75,12 +75,6 @@ exports.getUnreadMsgCountTotal  = function (success, error) {
 exports.isLoggedIn  = function (success, error) {
     exec(success, error, 'thsHxIM', 'isLoggedIn', []);
 };
-/**
- * 获取登录状态
- */
-exports.isLoggedIn  = function (success, error) {
-    exec(success, error, 'thsHxIM', 'isLoggedIn', []);
-};
 
 exports.getCurrentUser = function(success, error){
 exec(success, error, 'thsHxIM', 'getCurrentUser', []);
