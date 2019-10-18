@@ -13,6 +13,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Toast;
 
 import com.hyphenate.EMCallBack;
@@ -32,6 +33,7 @@ import com.hyphenate.chatuidemo.DemoHelper;
 import com.hyphenate.chatuidemo.HMSPushHelper;
 import com.hyphenate.chatuidemo.conference.ConferenceActivity;
 import com.hyphenate.chatuidemo.db.DemoDBManager;
+import com.hyphenate.chatuidemo.db.InviteMessgeDao;
 import com.hyphenate.chatuidemo.runtimepermissions.PermissionsManager;
 import com.hyphenate.chatuidemo.runtimepermissions.PermissionsResultAction;
 import com.hyphenate.chatuidemo.ui.AddContactActivity;
@@ -40,7 +42,9 @@ import com.hyphenate.chatuidemo.ui.GroupsActivity;
 import com.hyphenate.chatuidemo.ui.LoginActivity;
 import com.hyphenate.chatuidemo.ui.NewFriendsMsgActivity;
 import com.hyphenate.chatuidemo.ui.PublicChatRoomsActivity;
+import com.hyphenate.easeui.domain.EaseUser;
 import com.hyphenate.easeui.model.EaseAtMessageHelper;
+import com.hyphenate.easeui.model.EaseDingMessageHelper;
 import com.hyphenate.easeui.utils.EaseCommonUtils;
 import com.hyphenate.easeui.utils.EaseUserUtils;
 import com.hyphenate.util.DateUtils;
@@ -60,6 +64,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import cn.com.ths.fjcloud.R;
 
 /**
  * This class echoes a string called from JavaScript.
@@ -233,6 +239,64 @@ public class thsHxIM extends CordovaPlugin {
             String  currentUser = EMClient.getInstance().getCurrentUser();
             callbackContext.success(currentUser);
             return true;
+        }else if(action.equals("saveContactList")){
+            List<EaseUser> contactList = new ArrayList<EaseUser>();
+            String dataStr = args.getString(0);
+            JSONArray arr =new JSONArray(dataStr);
+            for (int i = 0;i<arr.length();i++){
+              JSONObject obj =   arr.getJSONObject(i);
+              String loginName =  obj.getString("loginName");
+              String user_name =  obj.getString("user_name");
+              EaseUser eu =new EaseUser(loginName);
+              eu.setNickname(user_name);
+              contactList.add(eu);
+            }
+            DemoDBManager.getInstance().saveContactList(contactList);
+            callbackContext.success("success");
+            return true;
+            //保存单联系个人
+        }else if(action.equals("saveContact")){
+           String dataStr = args.getString(0);
+             JSONObject obj =   new JSONObject(dataStr);
+             String loginName =  obj.getString("loginName");
+             String user_name =  obj.getString("user_name");
+             EaseUser eu =new EaseUser(loginName);
+             eu.setNickname(user_name);
+             DemoDBManager.getInstance().saveContact(eu);
+             callbackContext.success("success");
+            return true;
+            //删除单个人
+        }else if(action.equals("deleteContact")){
+            String loginName = args.getString(0);
+            DemoDBManager.getInstance().deleteContact(loginName);
+            callbackContext.success("success");
+            return true;
+        }else if(action.equals("deleteContact")){
+//            boolean deleteMessage = false;
+//            if (item.getItemId() == R.id.delete_message) {
+//                deleteMessage = true;
+//            } else if (item.getItemId() == R.id.delete_conversation) {
+//                deleteMessage = false;
+//            }
+//            EMConversation tobeDeleteCons = conversationListView.getItem(((AdapterView.AdapterContextMenuInfo) item.getMenuInfo()).position);
+//            if (tobeDeleteCons == null) {
+//                return true;
+//            }
+//            if(tobeDeleteCons.getType() == EMConversation.EMConversationType.GroupChat){
+//                EaseAtMessageHelper.get().removeAtMeGroup(tobeDeleteCons.conversationId());
+//            }
+//            try {
+//                // delete conversation
+//                EMClient.getInstance().chatManager().deleteConversation(tobeDeleteCons.conversationId(), deleteMessage);
+//                InviteMessgeDao inviteMessgeDao = new InviteMessgeDao(getActivity());
+//                inviteMessgeDao.deleteMessage(tobeDeleteCons.conversationId());
+//                // To delete the native stored adked users in this conversation.
+//                if (deleteMessage) {
+//                    EaseDingMessageHelper.get().delete(tobeDeleteCons);
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
         return false;
     }
@@ -378,6 +442,7 @@ public class thsHxIM extends CordovaPlugin {
             cn.com.ths.hxchattest.MsgModel msg =new cn.com.ths.hxchattest.MsgModel();
             // get username or group id
             String username = conversation.conversationId();
+            msg.setConversationId(conversation.conversationId());
             msg.setType(conversation.getType());
             if (conversation.getType() == EMConversation.EMConversationType.GroupChat) {
                 String groupId = conversation.conversationId();

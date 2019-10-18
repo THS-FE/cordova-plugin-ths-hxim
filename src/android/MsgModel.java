@@ -2,6 +2,8 @@ package cn.com.ths.hxchattest;
 import com.hyphenate.chat.EMConversation;
 
 public class MsgModel {
+    // 会话ID
+    private String  conversationId;
     /** 聊天对象，可能是群组、聊天室、人 */
     private String name;
     /** 未读消息个数 */
@@ -72,11 +74,33 @@ public class MsgModel {
     public void setMsgState(boolean msgState) {
         this.msgState = msgState;
     }
+//
+//    @Override
+//    public String toString() {
+//        return "{" +
+//                "name:'" + name + '\'' +
+//                ", unreadLabel:'" + unreadLabel + '\'' +
+//                ", message:'" + message + '\'' +
+//                ", time:'" + time + '\'' +
+//                ", motioned:" + motioned +
+//                ", type:" + type +
+//                ", msgState:" + msgState +
+//                '}';
+//    }
+
+    public String getConversationId() {
+        return conversationId;
+    }
+
+    public void setConversationId(String conversationId) {
+        this.conversationId = conversationId;
+    }
 
     @Override
     public String toString() {
         return "{" +
-                "name:'" + name + '\'' +
+                "conversationId:'" + conversationId + '\'' +
+                ", name:'" + name + '\'' +
                 ", unreadLabel:'" + unreadLabel + '\'' +
                 ", message:'" + message + '\'' +
                 ", time:'" + time + '\'' +
