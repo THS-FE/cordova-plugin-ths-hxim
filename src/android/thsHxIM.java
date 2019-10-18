@@ -1,9 +1,13 @@
 package cn.com.ths.hx.im;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.Uri;
+import android.os.Build;
+import android.os.PowerManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -28,6 +32,8 @@ import com.hyphenate.chatuidemo.DemoHelper;
 import com.hyphenate.chatuidemo.HMSPushHelper;
 import com.hyphenate.chatuidemo.conference.ConferenceActivity;
 import com.hyphenate.chatuidemo.db.DemoDBManager;
+import com.hyphenate.chatuidemo.runtimepermissions.PermissionsManager;
+import com.hyphenate.chatuidemo.runtimepermissions.PermissionsResultAction;
 import com.hyphenate.chatuidemo.ui.AddContactActivity;
 import com.hyphenate.chatuidemo.ui.ChatActivity;
 import com.hyphenate.chatuidemo.ui.GroupsActivity;
@@ -71,6 +77,7 @@ public class thsHxIM extends CordovaPlugin {
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
+        requestPermissions();
         Log.e(TAG,"initialize");
         DemoHelper.getInstance().initHandler(cordova.getActivity().getMainLooper());
         //注册各种事件监听
@@ -84,9 +91,37 @@ public class thsHxIM extends CordovaPlugin {
 
         // 获取华为 HMS 推送 token
         HMSPushHelper.getInstance().getHMSToken(cordova.getActivity());
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            String packageName = cordova.getActivity().getPackageName();
+            PowerManager pm = (PowerManager) cordova.getActivity().getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                try {
+                    //some device doesn't has activity to handle this intent
+                    //so add try catch
+                    Intent intent = new Intent();
+                    intent.setAction(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + packageName));
+                    cordova.getActivity().startActivity(intent);
+                } catch (Exception e) {
+                }
+            }
+        }
     }
 
+    @TargetApi(23)
+    private void requestPermissions() {
+        PermissionsManager.getInstance().requestAllManifestPermissionsIfNecessary(cordova.getActivity(), new PermissionsResultAction() {
+            @Override
+            public void onGranted() {
+//				Toast.makeText(MainActivity.this, "All permissions have been granted", Toast.LENGTH_SHORT).show();
+            }
 
+            @Override
+            public void onDenied(String permission) {
+                //Toast.makeText(MainActivity.this, "Permission " + permission + " has been denied", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     @Override
     public void onStart() {
         super.onStart();
@@ -484,7 +519,7 @@ public class thsHxIM extends CordovaPlugin {
 //            public void run() {
                 // refresh unread count
                 String format = "cordova.plugins.thsHxIM.refreshUIWithMessageInAndroidCallback(%s);";
-                final String js = String.format(format, "refreshUI");
+                final String js = String.format(format, "'refreshUI'");
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -578,7 +613,7 @@ public class thsHxIM extends CordovaPlugin {
                     // onUserException(Constant.ACCOUNT_KICKED_BY_OTHER_DEVICE);
                 }
                 String format = "cordova.plugins.thsHxIM.onDisconnectedReceiverInAndroidCallback(%s);";
-                final String js = String.format(format, errorStr);
+                final String js = String.format(format, "'"+errorStr+"'");
                 cordova.getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -741,7 +776,7 @@ public class thsHxIM extends CordovaPlugin {
      */
     private  void sendMsg(String data,String methodStr){
         String format = "cordova.plugins.thsHxIM."+methodStr+"InAndroidCallback(%s);";
-        final String js = String.format(format, data);
+        final String js = String.format(format, "'"+data+"'");
         cordova.getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
