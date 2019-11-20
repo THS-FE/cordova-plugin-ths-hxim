@@ -64,6 +64,13 @@ exports.startConferenceCall = function (success, error) {
     exec(success, error, 'thsHxIM', 'startConferenceCall', []);
 };
 /**
+ * 进入音视频会议页面
+ */
+exports.startConferenceCallByMembers = function (members,success, error) {
+    exec(success, error, 'thsHxIM', 'startConferenceCallByMembers', [members]);
+};
+
+/**
  * 获取未读消息总数
  */
 exports.getUnreadMsgCountTotal  = function (success, error) {
@@ -78,26 +85,26 @@ exports.isLoggedIn  = function (success, error) {
 
 exports.getCurrentUser = function(success, error){
 exec(success, error, 'thsHxIM', 'getCurrentUser', []);
-}
+};
 /**
  * 存储数据
  */
 exports.saveContactList = function(data,success, error){
   exec(success, error, 'thsHxIM', 'saveContactList', [data]);
-}
+};
 
 /**
  * 存储单个人数据
  */
 exports.saveContact = function(data,success, error){
   exec(success, error, 'thsHxIM', 'saveContact', [data]);
-}
+};
 /**
  * 删除单个人数据
  */
 exports.deleteContact = function(data,success, error){
   exec(success, error, 'thsHxIM', 'deleteContact', [data]);
-}
+};
 
 
 
@@ -106,19 +113,20 @@ exports.refreshUIWithMessageInAndroidCallback = function(data) {
     //data = JSON.stringify(data)
    //console.log('refreshUIWithMessageInAndroidCallback' + data);
    cordova.fireDocumentEvent('hxim.refreshUIWithMessage', data);
-}
+};
 // 网路状态监听回调
 exports.onDisconnectedReceiverInAndroidCallback = function(data) {
-    // data = JSON.stringify(data)
+    data = JSON.stringify(data);
+    data = JSON.parse(data);
    //console.log('onDisconnectedReceiverInAndroidCallback' + data);
    cordova.fireDocumentEvent('hxim.onDisconnectedReceiver', data);
-}
+};
 // 联系人更新
 exports.contactUpdateInAndroidCallback = function(data) {
    //data = JSON.stringify(data)
   // console.log('contactUpdateInAndroidCallback' + data);
    cordova.fireDocumentEvent('hxim.contactUpdate', data);
-}
+};
 
 
 

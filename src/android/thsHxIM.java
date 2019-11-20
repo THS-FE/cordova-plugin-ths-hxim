@@ -13,7 +13,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Toast;
 
 import com.hyphenate.EMCallBack;
@@ -33,7 +32,6 @@ import com.hyphenate.chatuidemo.DemoHelper;
 import com.hyphenate.chatuidemo.HMSPushHelper;
 import com.hyphenate.chatuidemo.conference.ConferenceActivity;
 import com.hyphenate.chatuidemo.db.DemoDBManager;
-import com.hyphenate.chatuidemo.db.InviteMessgeDao;
 import com.hyphenate.chatuidemo.runtimepermissions.PermissionsManager;
 import com.hyphenate.chatuidemo.runtimepermissions.PermissionsResultAction;
 import com.hyphenate.chatuidemo.ui.AddContactActivity;
@@ -44,7 +42,6 @@ import com.hyphenate.chatuidemo.ui.NewFriendsMsgActivity;
 import com.hyphenate.chatuidemo.ui.PublicChatRoomsActivity;
 import com.hyphenate.easeui.domain.EaseUser;
 import com.hyphenate.easeui.model.EaseAtMessageHelper;
-import com.hyphenate.easeui.model.EaseDingMessageHelper;
 import com.hyphenate.easeui.utils.EaseCommonUtils;
 import com.hyphenate.easeui.utils.EaseUserUtils;
 import com.hyphenate.util.DateUtils;
@@ -64,8 +61,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import cn.com.ths.fjcloud.R;
 
 /**
  * This class echoes a string called from JavaScript.
@@ -224,6 +219,24 @@ public class thsHxIM extends CordovaPlugin {
             ConferenceActivity.startConferenceCall(cordova.getActivity(),null);
             callbackContext.success("success");
             return true;
+            //开启音视频会议页面，选完人
+        }else if(action.equals("startConferenceCallByMembers")){
+            String members = args.getString(0);
+            JSONArray array = new JSONArray(members);
+            if(array!=null){
+                int len = array.length();
+                String mA[] = new String[len];
+                for (int i = 0; i<len; i++){
+                    String member =array.getString(i);
+                    mA[i] = member;
+                }
+                ConferenceActivity.startConferenceCallByMembers(cordova.getActivity(),mA);
+                callbackContext.success("success");
+            }else{
+                callbackContext.error("error");
+            }
+
+            return true;
             //获取消息总数
         }else if(action.equals("getUnreadMsgCountTotal")){
             int count = getUnreadMsgCountTotal();
@@ -271,32 +284,6 @@ public class thsHxIM extends CordovaPlugin {
             DemoDBManager.getInstance().deleteContact(loginName);
             callbackContext.success("success");
             return true;
-        }else if(action.equals("deleteContact")){
-//            boolean deleteMessage = false;
-//            if (item.getItemId() == R.id.delete_message) {
-//                deleteMessage = true;
-//            } else if (item.getItemId() == R.id.delete_conversation) {
-//                deleteMessage = false;
-//            }
-//            EMConversation tobeDeleteCons = conversationListView.getItem(((AdapterView.AdapterContextMenuInfo) item.getMenuInfo()).position);
-//            if (tobeDeleteCons == null) {
-//                return true;
-//            }
-//            if(tobeDeleteCons.getType() == EMConversation.EMConversationType.GroupChat){
-//                EaseAtMessageHelper.get().removeAtMeGroup(tobeDeleteCons.conversationId());
-//            }
-//            try {
-//                // delete conversation
-//                EMClient.getInstance().chatManager().deleteConversation(tobeDeleteCons.conversationId(), deleteMessage);
-//                InviteMessgeDao inviteMessgeDao = new InviteMessgeDao(getActivity());
-//                inviteMessgeDao.deleteMessage(tobeDeleteCons.conversationId());
-//                // To delete the native stored adked users in this conversation.
-//                if (deleteMessage) {
-//                    EaseDingMessageHelper.get().delete(tobeDeleteCons);
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
         }
         return false;
     }
@@ -677,14 +664,22 @@ public class thsHxIM extends CordovaPlugin {
                     errorStr = "USER_KICKED_BY_OTHER_DEVICE";
                     // onUserException(Constant.ACCOUNT_KICKED_BY_OTHER_DEVICE);
                 }
-                String format = "cordova.plugins.thsHxIM.onDisconnectedReceiverInAndroidCallback(%s);";
-                final String js = String.format(format, "'"+errorStr+"'");
-                cordova.getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        instance.webView.loadUrl("javascript:" + js);
-                    }
-                });
+//                String format = "cordova.plugins.thsHxIM.onDisconnectedReceiverInAndroidCallback(%s);";
+//                final String js = String.format(format, "'"+errorStr+"'");
+//                cordova.getActivity().runOnUiThread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        instance.webView.loadUrl("javascript:" + js);
+//                    }
+//                });
+                try{
+                JSONObject obj = new JSONObject();
+                obj.put("action","onDisconnectedReceiver");
+                obj.put("err",errorStr);
+                sendMsg(obj.toString(),"onDisconnectedReceiver");
+                }catch (JSONException e){
+                sendMsg("{'action':'onDisconnectedReceiver','err':'jsonErr'}","onDisconnectedReceiver");
+                }
             }
         };
         IntentFilter disconnectedReceiverintentFilter = new IntentFilter();
