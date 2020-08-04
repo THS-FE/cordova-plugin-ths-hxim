@@ -2,7 +2,7 @@
 <plugin id="cn.com.ths.hx.im" version="1.0.0"
     xmlns="http://apache.org/cordova/ns/plugins/1.0"
     xmlns:android="http://schemas.android.com/apk/res/android">
-    <name>thsHxIM</name>
+    <name>环信IM</name>
     <js-module name="thsHxIM" src="www/thsHxIM.js">
         <clobbers target="cordova.plugins.thsHxIM" />
     </js-module>
@@ -12,6 +12,12 @@
                 <param name="android-package" value="cn.com.ths.hx.im.thsHxIM" />
                 <param name="onload" value="true" />
             </feature>
+        </config-file>
+        <!--环信应用的appkey-->
+        <preference name="EASEMOB_APPKEY" default="1102191016010677#cn-com-ths-gridapp-move" />
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <!-- 请填写你自己的环信应用的appkey -->
+            <meta-data android:name="EASEMOB_APPKEY" android:value="$EASEMOB_APPKEY" tools:replace="android:value"/>
         </config-file>
         <config-file parent="/*" target="AndroidManifest.xml"></config-file>
         <source-file src="src/android/thsHxIM.java" target-dir="src/cn/com/ths/hx/im/thsHxIM" />

@@ -1,9 +1,9 @@
 {
-  "name": "cn.com.ths.hx.im",
+  "name": "cordova-plugin-ths-hxim",
   "version": "1.0.0",
   "description": "",
   "cordova": {
-    "id": "cn.com.ths.hx.im",
+    "id": "cordova-plugin-ths-hxim",
     "platforms": [
       "android"
     ]

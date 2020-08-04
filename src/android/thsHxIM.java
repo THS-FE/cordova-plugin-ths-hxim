@@ -14,7 +14,6 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.Toast;
-
 import com.hyphenate.EMCallBack;
 import com.hyphenate.EMClientListener;
 import com.hyphenate.EMContactListener;
@@ -45,7 +44,8 @@ import com.hyphenate.easeui.model.EaseAtMessageHelper;
 import com.hyphenate.easeui.utils.EaseCommonUtils;
 import com.hyphenate.easeui.utils.EaseUserUtils;
 import com.hyphenate.util.DateUtils;
-
+import com.hyphenate.chatuidemo.ui.VideoCallActivity;
+import com.hyphenate.chatuidemo.ui.VoiceCallActivity;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
@@ -284,7 +284,40 @@ public class thsHxIM extends CordovaPlugin {
             DemoDBManager.getInstance().deleteContact(loginName);
             callbackContext.success("success");
             return true;
+            
+        }else if(action.equals("startVoiceCall")){
+            // 给指定人开启语音电话
+            String username = args.getString(0);
+            if(username==null||username.equals("")){
+                Toast.makeText(cordova.getActivity(), "用户信息为空", Toast.LENGTH_SHORT).show();
+               return;
+            }
+            if (!EMClient.getInstance().isConnected()) {
+            Toast.makeText(cordova.getActivity(), com.hyphenate.chatuidemo.R.string.not_connect_to_server, Toast.LENGTH_SHORT).show();
+            } else {
+            startActivity(new Intent(cordova.getActivity(), VoiceCallActivity.class).putExtra("username", username)
+                    .putExtra("isComingCall", false));
+            // voiceCallBtn.setEnabled(false);
+//            inputMenu.hideExtendMenuContainer();
+            }
+            
+        }else if(action.equals("startVideoCall")){
+             // 给指定人开启视频电话
+            String username = args.getString(0);
+            if(username==null||username.equals("")){
+                Toast.makeText(cordova.getActivity(), "用户信息为空", Toast.LENGTH_SHORT).show();
+               return;
+            }
+            if (!EMClient.getInstance().isConnected()){
+            Toast.makeText(cordova.getActivity(), com.hyphenate.chatuidemo.R.string.not_connect_to_server, Toast.LENGTH_SHORT).show();
+            }else {
+            startActivity(new Intent(cordova.getActivity(), VideoCallActivity.class).putExtra("username", username)
+                    .putExtra("isComingCall", false));
+            // videoCallBtn.setEnabled(false);
+            // inputMenu.hideExtendMenuContainer();
+           }
         }
+
         return false;
     }
 
