@@ -1,7 +1,7 @@
 {
   "name": "cordova-plugin-ths-hxim",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
+  "description": "环信IM插件",
   "cordova": {
     "id": "cordova-plugin-ths-hxim",
     "platforms": [
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/THS-FE/thsHxIM.git"
+    "url": "git+https://github.com/THS-FE/cordova-plugin-ths-hxim.git"
   },
   "keywords": [
     "ecosystem:cordova",
@@ -19,7 +19,7 @@
   "author": "liuyx",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/THS-FE/thsHxIM/issues"
+    "url": "https://github.com/THS-FE/cordova-plugin-ths-hxim/issues"
   },
-  "homepage": "https://github.com/THS-FE/thsHxIM#readme"
+  "homepage": "https://github.com/THS-FE/cordova-plugin-ths-hxim#readme"
 }
