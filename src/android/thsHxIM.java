@@ -1,5 +1,4 @@
 package cn.com.ths.hx.im;
-
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;

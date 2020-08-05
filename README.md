@@ -274,7 +274,7 @@ cordova plugin add 文件路径
 
 
 
-**说明：使用ts 进行开发时，需要在文件上变声明下declare let cordova，不然会报错;**
+**说明：使用ts 进行开发时，需要在文件上变声明下declare const cordova，不然会报错;**
 
 ```typescript
 import { Component, OnInit, Input } from '@angular/core';
