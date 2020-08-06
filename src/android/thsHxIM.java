@@ -283,34 +283,34 @@ public class thsHxIM extends CordovaPlugin {
             DemoDBManager.getInstance().deleteContact(loginName);
             callbackContext.success("success");
             return true;
-            
+
         }else if(action.equals("startVoiceCall")){
             // 给指定人开启语音电话
             String username = args.getString(0);
             if(username==null||username.equals("")){
                 Toast.makeText(cordova.getActivity(), "用户信息为空", Toast.LENGTH_SHORT).show();
-               return;
+               return true;
             }
             if (!EMClient.getInstance().isConnected()) {
             Toast.makeText(cordova.getActivity(), com.hyphenate.chatuidemo.R.string.not_connect_to_server, Toast.LENGTH_SHORT).show();
             } else {
-            startActivity(new Intent(cordova.getActivity(), VoiceCallActivity.class).putExtra("username", username)
+              cordova.getActivity().startActivity(new Intent(cordova.getActivity(), VoiceCallActivity.class).putExtra("username", username)
                     .putExtra("isComingCall", false));
             // voiceCallBtn.setEnabled(false);
 //            inputMenu.hideExtendMenuContainer();
             }
-            
+
         }else if(action.equals("startVideoCall")){
              // 给指定人开启视频电话
             String username = args.getString(0);
             if(username==null||username.equals("")){
                 Toast.makeText(cordova.getActivity(), "用户信息为空", Toast.LENGTH_SHORT).show();
-               return;
+               return true;
             }
             if (!EMClient.getInstance().isConnected()){
             Toast.makeText(cordova.getActivity(), com.hyphenate.chatuidemo.R.string.not_connect_to_server, Toast.LENGTH_SHORT).show();
             }else {
-            startActivity(new Intent(cordova.getActivity(), VideoCallActivity.class).putExtra("username", username)
+              cordova.getActivity().startActivity(new Intent(cordova.getActivity(), VideoCallActivity.class).putExtra("username", username)
                     .putExtra("isComingCall", false));
             // videoCallBtn.setEnabled(false);
             // inputMenu.hideExtendMenuContainer();

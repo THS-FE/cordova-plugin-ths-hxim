@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-ths-hxim",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "环信IM插件",
   "cordova": {
     "id": "cordova-plugin-ths-hxim",
